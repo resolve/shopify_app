@@ -86,6 +86,20 @@ class LoginProtectionTest < ActionController::TestCase
     end
   end
 
+  test 'ActiveResource::UnauthorizedAccess is captured and redirects to login url' do
+    with_application_test_routes do
+      session[:shopify] = 'foobar'
+      sess = ShopifyAPI::Session.new('foobar.myshopify.com', 'abracadabra')
+      ShopifyApp::SessionRepository.expects(:retrieve).returns(sess).once
+
+      LoginProtectionController.any_instance.expects(:index)
+                               .raises(ActiveResource::UnauthorizedAccess, mock)
+
+      get :index
+      assert_redirected_to @controller.send(:main_or_engine_login_url)
+    end
+  end
+
   private
 
   def with_application_test_routes
